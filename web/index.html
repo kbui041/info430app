@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Washington Trail Finder</title>
+  <style>
+    :root {
+      --forest-900: #0f2a20;
+      --forest-700: #1f4d3a;
+      --forest-500: #3e7c5a;
+      --forest-100: #e3eee7;
+      --paper: #f6f4ee;
+      --card: #ffffff;
+      --ink: #1b221e;
+      --muted: #66736b;
+      --line: #e2e6e1;
+      --easy: #2f8a57;
+      --easy-bg: #e4f3ea;
+      --moderate: #b5791a;
+      --moderate-bg: #fbf0dc;
+      --hard: #b8423a;
+      --hard-bg: #f9e3e1;
+      --star: #e0a526;
+      --radius: 16px;
+      --shadow: 0 1px 2px rgba(16, 32, 24, .06), 0 8px 24px rgba(16, 32, 24, .08);
+      --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; }
+    button, input, select { font: inherit; }
+    :focus-visible { outline: 3px solid #9cc9ad; outline-offset: 2px; }
+
+    /* ---------- Header with mountains ---------- */
+    .hero {
+      position: relative;
+      color: #fff;
+      background: linear-gradient(180deg, #16382b 0%, #24543f 55%, #3a7356 100%);
+      padding: 56px 24px 150px;
+      overflow: hidden;
+    }
+    .hero-inner { max-width: 1120px; margin: 0 auto; position: relative; z-index: 2; }
+    .eyebrow { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin: 0 0 10px; }
+    .hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(34px, 5vw, 54px); line-height: 1.05; margin: 0 0 14px; }
+    .hero p.lead { font-size: 18px; max-width: 560px; margin: 0; opacity: .9; line-height: 1.5; }
+    .mountains { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 190px; z-index: 1; }
+
+    /* ---------- Filter panel ---------- */
+    main { max-width: 1120px; margin: -110px auto 0; padding: 0 24px 64px; position: relative; z-index: 3; }
+    .filters {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px 24px;
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr 1.2fr 1.4fr auto;
+      gap: 22px 28px;
+      align-items: start;
+    }
+    .field { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .field-label { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .field-value { font-size: 14px; font-weight: 600; color: var(--forest-700); letter-spacing: 0; text-transform: none; }
+    select {
+      appearance: none;
+      width: 100%;
+      padding: 10px 36px 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2366736b' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    input[type=range] { width: 100%; accent-color: var(--forest-500); margin: 8px 0 0; cursor: pointer; }
+    .segmented { display: flex; background: var(--forest-100); border-radius: 10px; padding: 3px; gap: 2px; }
+    .segmented button {
+      flex: 1; border: 0; background: transparent; border-radius: 8px; padding: 8px 6px;
+      font-size: 14px; font-weight: 600; color: var(--forest-700); cursor: pointer; white-space: nowrap;
+    }
+    .segmented button[aria-pressed=true] { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .segmented button[data-value=easy][aria-pressed=true] { color: var(--easy); }
+    .segmented button[data-value=moderate][aria-pressed=true] { color: var(--moderate); }
+    .segmented button[data-value=hard][aria-pressed=true] { color: var(--hard); }
+
+    .toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: 600; padding-top: 6px; white-space: nowrap; }
+    .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .switch { width: 42px; height: 24px; border-radius: 999px; background: #cfd6d1; position: relative; transition: background .2s; flex: none; }
+    .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+    .toggle input:checked + .switch { background: var(--forest-500); }
+    .toggle input:checked + .switch::after { transform: translateX(18px); }
+    .toggle input:focus-visible + .switch { outline: 3px solid #9cc9ad; outline-offset: 2px; }
+    .reset { border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; align-self: flex-start; }
+
+    /* ---------- Results ---------- */
+    .results-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 34px 2px 16px; flex-wrap: wrap; }
+    .results-bar h2 { font-family: var(--serif); font-size: 24px; font-weight: 600; margin: 0; }
+    .results-bar h2 span { color: var(--muted); font-family: var(--sans); font-size: 15px; font-weight: 500; margin-left: 8px; }
+    .sort { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+    .sort select { width: auto; padding-top: 7px; padding-bottom: 7px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden; display: flex; flex-direction: column;
+      transition: transform .15s ease, box-shadow .15s ease;
+      animation: rise .3s ease both;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(16,32,24,.06), 0 14px 32px rgba(16,32,24,.12); }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .card-top { height: 6px; }
+    .card-top.easy { background: var(--easy); }
+    .card-top.moderate { background: var(--moderate); }
+    .card-top.hard { background: var(--hard); }
+    .card-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+    .card-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .card h3 { font-family: var(--serif); font-size: 21px; font-weight: 600; margin: 0 0 4px; line-height: 1.2; }
+    .region { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .dog { background: var(--forest-100); color: var(--forest-700); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+    .rating { text-align: right; flex: none; }
+    .rating .num { font-size: 20px; font-weight: 700; }
+    .stars { color: var(--star); font-size: 13px; letter-spacing: 1px; white-space: nowrap; }
+    .stars .empty { color: #d9dcd6; }
+
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--line); border-radius: 12px; }
+    .stat { padding: 10px 12px; }
+    .stat + .stat { border-left: 1px solid var(--line); }
+    .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+    .stat .v { font-size: 17px; font-weight: 700; margin-top: 2px; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; text-transform: capitalize; }
+    .pill.easy { color: var(--easy); background: var(--easy-bg); }
+    .pill.moderate { color: var(--moderate); background: var(--moderate-bg); }
+    .pill.hard { color: var(--hard); background: var(--hard-bg); }
+
+    .report { background: #f8f8f4; border-radius: 12px; padding: 12px 14px; margin-top: auto; }
+    .report-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .report-meta strong { color: var(--forest-700); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .report q { font-size: 14px; line-height: 1.45; color: #34403a; quotes: "\201C" "\201D"; }
+    .report.none { color: var(--muted); font-size: 14px; }
+
+    /* Loading skeleton, empty and error states */
+    .skeleton { height: 290px; border-radius: var(--radius); background: linear-gradient(90deg, #eceee8 25%, #f5f6f2 50%, #eceee8 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    .message { grid-column: 1 / -1; text-align: center; padding: 56px 24px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .message .icon { font-size: 40px; }
+    .message h3 { font-family: var(--serif); font-size: 22px; margin: 10px 0 6px; }
+    .message p { color: var(--muted); margin: 0 0 16px; }
+    .message button { border: 0; background: var(--forest-700); color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    .message.error h3 { color: var(--hard); }
+
+    footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 24px 40px; }
+
+    @media (max-width: 960px) {
+      .filters { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .hero { padding: 40px 20px 140px; }
+      main { padding: 0 16px 48px; }
+      .filters { grid-template-columns: 1fr; padding: 18px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Washington State · Trail Finder</p>
+      <h1>Find a hike you can<br>actually finish this weekend.</h1>
+      <p class="lead">Set your limits for distance, elevation and difficulty. We'll show the best-rated trails that fit, with the latest trip report from the trail.</p>
+    </div>
+    <svg class="mountains" viewBox="0 0 1440 190" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 120 L120 70 L210 105 L330 30 L430 95 L520 60 L640 118 L760 40 L860 100 L980 55 L1090 110 L1200 45 L1310 95 L1440 60 L1440 190 L0 190 Z" fill="#4c8a68" opacity=".45"/>
+      <path d="M330 30 L355 52 L340 50 L330 60 L318 50 L305 52 Z M760 40 L785 62 L770 60 L760 70 L748 60 L735 62 Z M1200 45 L1222 64 L1209 62 L1200 71 L1190 62 L1178 64 Z" fill="#fff" opacity=".7"/>
+      <path d="M0 150 L90 115 L200 145 L300 100 L410 140 L540 95 L660 145 L780 110 L900 150 L1020 105 L1150 145 L1280 112 L1440 140 L1440 190 L0 190 Z" fill="#2f6a4c" opacity=".7"/>
+      <path d="M0 190 L0 170 Q360 140 720 168 T1440 160 L1440 190 Z" fill="#f6f4ee"/>
+    </svg>
+  </header>
+
+  <main>
+    <form class="filters" id="filters" aria-label="Trail filters">
+      <div class="field">
+        <label class="field-label" for="region">Region</label>
+        <select id="region">
+          <option value="">Any region</option>
+          <option>Mount Rainier</option>
+          <option>North Cascades</option>
+          <option>Olympic Peninsula</option>
+          <option>Snoqualmie Pass</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="maxMiles">Max distance <span class="field-value" id="maxMilesOut">Any</span></label>
+        <input id="maxMiles" type="range" min="1" max="13" step="0.5" value="13">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="maxGain">Max elevation gain <span class="field-value" id="maxGainOut">Any</span></label>
+        <input id="maxGain" type="range" min="250" max="4500" step="250" value="4500">
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="difficultyLabel">Difficulty</span>
+        <div class="segmented" role="group" aria-labelledby="difficultyLabel" id="difficulty">
+          <button type="button" data-value="" aria-pressed="true">Any</button>
+          <button type="button" data-value="easy" aria-pressed="false">Easy</button>
+          <button type="button" data-value="moderate" aria-pressed="false">Moderate</button>
+          <button type="button" data-value="hard" aria-pressed="false">Hard</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Pups</span>
+        <label class="toggle"><input id="dogs" type="checkbox"><span class="switch"></span>Dog-friendly</label>
+        <button type="button" class="reset" id="reset">Reset filters</button>
+      </div>
+    </form>
+
+    <div class="results-bar">
+      <h2 id="count" aria-live="polite">Trails</h2>
+      <label class="sort">Sort by
+        <select id="sort">
+          <option value="rating">Top rated</option>
+          <option value="miles">Shortest first</option>
+          <option value="gain">Least climbing</option>
+          <option value="recent">Latest trip report</option>
+        </select>
+      </label>
+    </div>
+
+    <section class="grid" id="results"></section>
+  </main>
+
+  <footer>Trail stats are approximate. Check road and trail conditions before you go.</footer>
+
+  <script>
+    const MILES_ANY = 13;   // slider at its max = no distance limit
+    const GAIN_ANY = 4500;  // slider at its max = no elevation limit
+    let trails = [];        // last rows from the server
+    let difficulty = '';    // '', 'easy', 'moderate', 'hard'
+    let requestNumber = 0;  // ignore answers to old searches
+
+    const $ = (id) => document.getElementById(id);
+
+    // Small helper: make an element with a class and optional text (text is never treated as HTML).
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    function stars(rating) {
+      const wrap = el('div', 'stars');
+      const full = Math.round(Number(rating));
+      wrap.append(el('span', '', '★'.repeat(full)), el('span', 'empty', '★'.repeat(5 - full)));
+      wrap.setAttribute('aria-label', `${rating} out of 5 stars`);
+      return wrap;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function card(t) {
+      const c = el('article', 'card');
+      c.append(el('div', 'card-top ' + t.difficulty));
+      const body = el('div', 'card-body');
+
+      // Name, region, rating
+      const head = el('div', 'card-head');
+      const left = el('div');
+      left.append(el('h3', '', t.name));
+      const region = el('div', 'region', '📍 ' + t.region);
+      if (t.dog_friendly) region.append(el('span', 'dog', '🐕 Dogs OK'));
+      left.append(region);
+      const right = el('div', 'rating');
+      right.append(el('div', 'num', Number(t.rating).toFixed(1)), stars(t.rating));
+      head.append(left, right);
+
+      // Distance, gain, difficulty
+      const stats = el('div', 'stats');
+      const s1 = el('div', 'stat'); s1.append(el('div', 'k', 'Distance'), el('div', 'v', `${Number(t.miles).toFixed(1)} mi`));
+      const s2 = el('div', 'stat'); s2.append(el('div', 'k', 'Gain'), el('div', 'v', `${Number(t.gain_ft).toLocaleString()} ft`));
+      const s3 = el('div', 'stat'); const v3 = el('div', 'v'); v3.append(el('span', 'pill ' + t.difficulty, t.difficulty));
+      s3.append(el('div', 'k', 'Level'), v3);
+      stats.append(s1, s2, s3);
+
+      // Latest trip report
+      let report;
+      if (t.report_comment) {
+        report = el('div', 'report');
+        const meta = el('div', 'report-meta');
+        meta.append(el('strong', '', t.report_conditions), el('span', '', formatDate(t.report_date)));
+        report.append(meta, el('q', '', t.report_comment));
+      } else {
+        report = el('div', 'report none', 'No trip reports yet.');
+      }
+
+      body.append(head, stats, report);
+      c.append(body);
+      return c;
+    }
+
+    function sorted(rows) {
+      const by = $('sort').value;
+      const copy = rows.slice();
+      if (by === 'miles') copy.sort((a, b) => a.miles - b.miles);
+      else if (by === 'gain') copy.sort((a, b) => a.gain_ft - b.gain_ft);
+      else if (by === 'recent') copy.sort((a, b) => (b.report_date || '').localeCompare(a.report_date || ''));
+      else copy.sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name));
+      return copy;
+    }
+
+    function render() {
+      const grid = $('results');
+      grid.innerHTML = '';
+      const count = $('count');
+      count.textContent = 'Trails';
+      count.append(el('span', '', `${trails.length} match${trails.length === 1 ? '' : 'es'}`));
+
+      if (!trails.length) {
+        const m = el('div', 'message');
+        m.append(el('div', 'icon', '🏔️'), el('h3', '', 'No trails fit those limits'),
+                 el('p', '', 'Try a longer distance, more elevation gain, or a different region.'));
+        const b = el('button', '', 'Reset filters'); b.type = 'button'; b.onclick = resetFilters;
+        m.append(b);
+        grid.append(m);
+        return;
+      }
+      sorted(trails).forEach((t, i) => {
+        const c = card(t);
+        c.style.animationDelay = `${Math.min(i, 12) * 30}ms`;
+        grid.append(c);
+      });
+    }
+
+    function showLoading() {
+      const grid = $('results');
+      grid.innerHTML = '';
+      for (let i = 0; i < 6; i++) grid.append(el('div', 'skeleton'));
+    }
+
+    function showError(message) {
+      const grid = $('results');
+      grid.innerHTML = '';
+      $('count').textContent = 'Trails';
+      const m = el('div', 'message error');
+      m.append(el('div', 'icon', '⚠️'), el('h3', '', 'Could not load trails'), el('p', '', message));
+      const b = el('button', '', 'Try again'); b.type = 'button'; b.onclick = search;
+      m.append(b);
+      grid.append(m);
+    }
+
+    function updateSliderLabels() {
+      const miles = Number($('maxMiles').value);
+      const gain = Number($('maxGain').value);
+      $('maxMilesOut').textContent = miles >= MILES_ANY ? 'Any' : `≤ ${miles} mi`;
+      $('maxGainOut').textContent = gain >= GAIN_ANY ? 'Any' : `≤ ${gain.toLocaleString()} ft`;
+    }
+
+    // Ask our server for trails that match the filters. The server runs the SQL; the page never touches the database.
+    async function search() {
+      const params = new URLSearchParams();
+      const miles = Number($('maxMiles').value);
+      const gain = Number($('maxGain').value);
+      if ($('region').value) params.set('region', $('region').value);
+      if (miles < MILES_ANY) params.set('maxMiles', miles);
+      if (gain < GAIN_ANY) params.set('maxGain', gain);
+      if (difficulty) params.set('difficulty', difficulty);
+      if ($('dogs').checked) params.set('dogs', '1');
+
+      const mine = ++requestNumber;
+      if (!trails.length) showLoading();
+      try {
+        const res = await fetch('/api/trails?' + params.toString());
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (mine !== requestNumber) return; // a newer search already started
+        trails = data;
+        render();
+      } catch (err) {
+        if (mine === requestNumber) showError(err.message);
+      }
+    }
+
+    // Wait until the user stops dragging a slider before searching.
+    let timer;
+    function searchSoon() { clearTimeout(timer); timer = setTimeout(search, 200); }
+
+    function setDifficulty(value) {
+      difficulty = value;
+      for (const b of $('difficulty').querySelectorAll('button')) {
+        b.setAttribute('aria-pressed', String(b.dataset.value === value));
+      }
+    }
+
+    function resetFilters() {
+      $('region').value = '';
+      $('maxMiles').value = MILES_ANY;
+      $('maxGain').value = GAIN_ANY;
+      $('dogs').checked = false;
+      setDifficulty('');
+      updateSliderLabels();
+      search();
+    }
+
+    // Fill the Region dropdown from the Regions table.
+    async function loadRegions() {
+      try {
+        const res = await fetch('/api/regions');
+        if (!res.ok) return; // keep the built-in options
+        const names = await res.json();
+        const select = $('region');
+        const current = select.value;
+        select.innerHTML = '';
+        const any = el('option', '', 'Any region'); any.value = '';
+        select.append(any);
+        for (const name of names) { const o = el('option', '', name); o.value = name; select.append(o); }
+        select.value = current;
+      } catch (err) { /* keep the built-in options */ }
+    }
+
+    // Wire up the controls: every change searches right away.
+    $('region').addEventListener('change', search);
+    $('dogs').addEventListener('change', search);
+    $('maxMiles').addEventListener('input', () => { updateSliderLabels(); searchSoon(); });
+    $('maxGain').addEventListener('input', () => { updateSliderLabels(); searchSoon(); });
+    $('difficulty').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      setDifficulty(b.dataset.value);
+      search();
+    });
+    $('sort').addEventListener('change', render);
+    $('reset').addEventListener('click', resetFilters);
+    $('filters').addEventListener('submit', (e) => { e.preventDefault(); search(); });
+
+    updateSliderLabels();
+    loadRegions();
+    search(); // show every trail when the page opens
+  </script>
+</body>
+</html>
